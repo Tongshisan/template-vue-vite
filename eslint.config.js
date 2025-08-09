@@ -1,16 +1,35 @@
+import path from "path";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import { defineConfig } from "eslint/config";
 import eslintPluginImport from "eslint-plugin-import";
 import prettier from "eslint-plugin-prettier";
 import vue from "eslint-plugin-vue";
 
-export default defineConfig({
+// 项目根路径
+const projectRootDir = process.cwd();
+
+// 基础配置
+const baseConfig = {
   languageOptions: {
     ecmaVersion: 2022,
     sourceType: "module",
     globals: {
       browser: true,
       node: true,
+    },
+    parserOptions: {
+      project: "./tsconfig.app.json",
+    },
+  },
+  settings: {
+    "import/resolver": {
+      typescript: {
+        project: path.resolve(projectRootDir, "./tsconfig.app.json"),
+      },
+      alias: {
+        map: [["@", path.resolve(projectRootDir, "./src")]],
+        extensions: [".js", ".ts", ".tsx", ".vue"],
+      },
     },
   },
   plugins: {
@@ -61,4 +80,35 @@ export default defineConfig({
     ],
     "prettier/prettier": "error",
   },
-});
+};
+
+// Vue 和 TSX 文件配置
+const vueAndTsxConfig = {
+  files: ["**/*.vue", "**/*.tsx"],
+  ...baseConfig,
+};
+
+// TS 和 JS 文件配置
+const tsAndJsConfig = {
+  files: ["**/*.ts", "**/*.js"],
+  ...baseConfig,
+};
+
+// 配置文件例外
+const configFilesConfig = {
+  files: [
+    "**/.eslintrc.{js,cjs}",
+    "**/vite.config.ts",
+    "**/*.d.ts",
+    "**/index.vue",
+  ],
+  ...baseConfig,
+};
+
+// 导出配置数组（替代原来的 overrides）
+export default defineConfig([
+  baseConfig,
+  vueAndTsxConfig,
+  tsAndJsConfig,
+  configFilesConfig,
+]);
