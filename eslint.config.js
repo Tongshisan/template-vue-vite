@@ -1,5 +1,6 @@
 import path from "path";
 import tseslint from "@typescript-eslint/eslint-plugin";
+import tsParser from "@typescript-eslint/parser";
 import { defineConfig } from "eslint/config";
 import eslintPluginImport from "eslint-plugin-import";
 import prettier from "eslint-plugin-prettier";
@@ -17,14 +18,17 @@ const baseConfig = {
       browser: true,
       node: true,
     },
+    parser: tsParser,
     parserOptions: {
-      project: "./tsconfig.app.json",
+      project: "./tsconfig.eslint.json",
+      ecmaVersion: 2022,
+      sourceType: "module",
     },
   },
   settings: {
     "import/resolver": {
       typescript: {
-        project: path.resolve(projectRootDir, "./tsconfig.app.json"),
+        project: path.resolve(projectRootDir, "./tsconfig.eslint.json"),
       },
       alias: {
         map: [["@", path.resolve(projectRootDir, "./src")]],
@@ -94,15 +98,54 @@ const tsAndJsConfig = {
   ...baseConfig,
 };
 
-// 配置文件例外
+// 配置文件例外 - 不使用 TypeScript 解析器
 const configFilesConfig = {
   files: [
     "**/.eslintrc.{js,cjs}",
     "**/vite.config.ts",
     "**/*.d.ts",
     "**/index.vue",
+    "**/eslint.config.js",
   ],
-  ...baseConfig,
+  languageOptions: {
+    ecmaVersion: 2022,
+    sourceType: "module",
+    globals: {
+      browser: true,
+      node: true,
+    },
+  },
+  plugins: {
+    vue,
+    prettier,
+    import: eslintPluginImport,
+  },
+  rules: baseConfig.rules,
+  settings: baseConfig.settings,
+};
+
+// 专门为 eslint.config.js 创建的配置
+const eslintConfigJsConfig = {
+  files: ["**/eslint.config.js"],
+  languageOptions: {
+    ecmaVersion: 2022,
+    sourceType: "module",
+    globals: {
+      browser: true,
+      node: true,
+    },
+    // 不指定解析器，使用默认的 JavaScript 解析器
+    parserOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+    },
+  },
+  plugins: {
+    prettier,
+  },
+  rules: {
+    "prettier/prettier": "error",
+  },
 };
 
 // 导出配置数组（替代原来的 overrides）
@@ -111,4 +154,5 @@ export default defineConfig([
   vueAndTsxConfig,
   tsAndJsConfig,
   configFilesConfig,
+  eslintConfigJsConfig, // 添加专门的配置
 ]);
