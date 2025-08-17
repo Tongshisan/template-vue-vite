@@ -28,7 +28,7 @@ class SelectorManager {
   constructor() {
     this.#xpath = "";
     this.#iframe = null;
-    this.#selectorCleanup = () => {};
+    this.#selectorCleanup = () => { };
     this.#currentOverlayInfo = {
       overlay: null,
       targetElement: null,
@@ -57,6 +57,7 @@ class SelectorManager {
 
   setIframe(iframe: HTMLIFrameElement | null) {
     this.#iframe = iframe;
+    this.#setStyle();
   }
 
   // 添加事件监听器
@@ -128,10 +129,10 @@ class SelectorManager {
   }
 
   open() {
-    if (!this.#iframe) return () => {};
+    if (!this.#iframe) return () => { };
     const iframeDocument =
       this.#iframe.contentDocument || this.#iframe.contentWindow?.document;
-    if (!iframeDocument) return () => {};
+    if (!iframeDocument) return () => { };
     const scrollHandler = () => {
       let isTracking = false;
       let rafId: number;
@@ -184,29 +185,6 @@ class SelectorManager {
     }
     const mousemoveHandler = (e: MouseEvent) => {
       if (this.#isPaused) return;
-      const setStyle = () => {
-        const styleId = "highlight-overlay-style";
-        const existingStyle = iframeDocument.getElementById(styleId);
-        if (existingStyle) return;
-        const style = document.createElement("style");
-        style.textContent = `
-          .highlight-overlay {
-            z-index: 2147483646;
-            position: fixed;
-            background-color: rgba(102, 99, 255, 0.5); 
-            pointer-events: all; /* 改为 auto 以允许点击 */
-          }
-          .selected-overlay {
-            z-index: 2147483646;
-            position: fixed;
-            border: 2px dashed #6663FF;
-            pointer-events: all; /* 防止选中父元素后不能在选择子元素 */
-          }
-        `;
-        style.id = styleId;
-        iframeDocument.head.appendChild(style);
-      };
-      setStyle();
       const previousOverlay =
         iframeDocument.querySelector(".highlight-overlay");
       if (previousOverlay) {
@@ -283,14 +261,6 @@ class SelectorManager {
           this.#currentOverlayInfo.targetElement,
         );
 
-        return () => {
-          iframeDocument.removeEventListener(
-            "mousedown",
-            mousedownHandler,
-            true,
-          );
-          iframeDocument.removeEventListener("scroll", throttledScrollHandler);
-        };
       }
     };
 
@@ -326,7 +296,12 @@ class SelectorManager {
       }
       iframeDocument.removeEventListener("mousemove", mousemoveHandler);
       iframeDocument.removeEventListener("scroll", throttledScrollHandler);
-
+      iframeDocument.removeEventListener(
+        "mousedown",
+        mousedownHandler,
+        true,
+      );
+      iframeDocument.removeEventListener("scroll", throttledScrollHandler);
       // 触发清除事件
       this.#emitEvent("clear", "");
     };
@@ -338,7 +313,7 @@ class SelectorManager {
 
   public closeSelector() {
     this.#selectorCleanup();
-    this.#selectorCleanup = () => {};
+    this.#selectorCleanup = () => { };
     this.#currentOverlayInfo = {
       overlay: null,
       targetElement: null,
@@ -359,6 +334,33 @@ class SelectorManager {
   public resumeSelector() {
     this.#isPaused = false;
   }
+
+  #setStyle = () => {
+    if (!this.#iframe) return;
+    const iframeDocument =
+      this.#iframe.contentDocument || this.#iframe.contentWindow?.document;
+    if (!iframeDocument) return;
+    const styleId = "highlight-overlay-style";
+    const existingStyle = iframeDocument.getElementById(styleId);
+    if (existingStyle) return;
+    const style = document.createElement("style");
+    style.textContent = `
+      .highlight-overlay {
+        z-index: 2147483646;
+        position: fixed;
+        background-color: rgba(102, 99, 255, 0.5); 
+        pointer-events: all; /* 改为 auto 以允许点击 */
+      }
+      .selected-overlay {
+        z-index: 2147483646;
+        position: fixed;
+        border: 2px dashed #6663FF;
+        pointer-events: all; /* 防止选中父元素后不能在选择子元素 */
+      }
+    `;
+    style.id = styleId;
+    iframeDocument.head.appendChild(style);
+  };
 }
 
 export const selectorManager = new SelectorManager();
